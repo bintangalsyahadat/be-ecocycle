@@ -3,7 +3,6 @@
 namespace App\Providers\Filament;
 
 use App\Livewire\BranchProfileForm;
-use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -22,12 +21,26 @@ use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Joaopaulolndev\FilamentEditProfile\FilamentEditProfilePlugin;
-use Joaopaulolndev\FilamentEditProfile\Pages\EditProfilePage;
 
 class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
+        $plugins = [];
+
+        if (class_exists(FilamentEditProfilePlugin::class)) {
+            $plugins[] = FilamentEditProfilePlugin::make()
+                ->shouldRegisterNavigation(false)
+                ->slug('profile')
+                ->customProfileComponents([
+                    'branch_profile_form' => BranchProfileForm::class,
+                ]);
+        }
+
+        if (class_exists(\BezhanSalleh\FilamentShield\FilamentShieldPlugin::class)) {
+            $plugins[] = \BezhanSalleh\FilamentShield\FilamentShieldPlugin::make();
+        }
+
         return $panel
             ->default()
             ->id('admin')
@@ -38,15 +51,7 @@ class AdminPanelProvider extends PanelProvider
             ->colors([
                 'primary' => '#01A3B0',
             ])
-            ->plugins([
-                FilamentEditProfilePlugin::make()
-                    ->shouldRegisterNavigation(false)
-                    ->slug('profile')
-                    ->customProfileComponents([
-                        'branch_profile_form' => BranchProfileForm::class,
-                    ]),
-                FilamentShieldPlugin::make(),
-            ])
+            ->plugins($plugins)
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
@@ -74,7 +79,7 @@ class AdminPanelProvider extends PanelProvider
             ->userMenuItems([
                 'profile' => MenuItem::make()
                     ->label(fn (): string => Auth::user()?->name ?? 'Profile')
-                    ->url(fn (): string => EditProfilePage::getUrl())
+                    ->url(fn (): string => \Joaopaulolndev\FilamentEditProfile\Pages\EditProfilePage::getUrl())
                     ->icon('heroicon-m-user-circle'),
             ]);
     }
